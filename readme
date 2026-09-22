@@ -1,14 +1,14 @@
-Calculate position size
-Check maximum risk per trade, e.g. 0.5% of equity
-Check maximum total portfolio exposure
-Check maximum exposure per symbol
-Check correlation/exposure across related symbols
-Check maximum number of open positions
-Check daily loss limit
-Check drawdown limit
-Check margin requirements
-Check available free margin
-Check spread/slippage conditions
-Check whether trading is currently allowed
-Check whether the requested stop-loss is valid
-Reject the trade if any limit is violated
+- [ ] Calculate position size
+- [ ] Check maximum risk per trade, e.g. 0.5% of equity
+- [ ] Check maximum total portfolio exposure
+- [ ] Check maximum exposure per symbol
+- [ ] Check correlation/exposure across related symbols
+- [ ] Check maximum number of open positions
+- [ ] Check daily loss limit
+- [ ] Check drawdown limit
+- [ ] Check margin requirements
+- [ ] Check available free margin
+- [ ] Check spread/slippage conditions
+- [ ] Check whether trading is currently allowed
+- [ ] Check whether the requested stop-loss is valid
+- [ ] Reject the trade if any limit is violated
