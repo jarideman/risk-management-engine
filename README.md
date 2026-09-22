@@ -1,3 +1,4 @@
+## Pre-Trade Risk Checks
 - [ ] Calculate position size
 - [ ] Check maximum risk per trade, e.g. 0.5% of equity
 - [ ] Check maximum total portfolio exposure
