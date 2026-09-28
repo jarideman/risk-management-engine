@@ -1,4 +1,4 @@
-- [ x ] Setup connection
+- [x] Setup connection
 
 ## Pre-Trade Risk Checks
 - [ ] Calculate position size
