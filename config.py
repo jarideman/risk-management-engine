@@ -1,0 +1,1 @@
+SYMBOL = "BTCUSD"
