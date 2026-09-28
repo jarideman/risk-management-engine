@@ -1,6 +1,7 @@
 import MetaTrader5 as mt5
 from config import SYMBOL
 
+
 def init_mt5():
     if not mt5.initialize():
         print('MT5 initialization failed')
@@ -13,6 +14,7 @@ def init_mt5():
 
     print('MT5 initialization successful')
     return True
+
 
 def deinit_mt5():
     mt5.shutdown()
