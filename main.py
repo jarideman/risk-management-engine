@@ -1,4 +1,5 @@
 from connection.mt5_connection import init_mt5, deinit_mt5
+from pipeline.pipeline import run_pipeline
 
 
 def main():
@@ -6,8 +7,7 @@ def main():
         return
 
     try:
-        # Your main logic here
-        pass
+        run_pipeline()
 
     finally:
         deinit_mt5()

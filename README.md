@@ -1,17 +1,18 @@
+## Setup
 - [x] Setup connection
 
-## Pre-Trade Risk Checks
+## Pre trade validation checks
+- [ ] Check whether trading is currently allowed
+- [ ] Check maximum number of open positions
+- [ ] Check drawdown limit
+- [ ] Check daily loss limit
+
+## Pre trade risk checks
 - [ ] Calculate position size
-- [ ] Check maximum risk per trade, e.g. 0.5% of equity
+- [ ] Check whether the requested stop-loss and take-profit are valid
 - [ ] Check maximum total portfolio exposure
 - [ ] Check maximum exposure per symbol
 - [ ] Check correlation/exposure across related symbols
-- [ ] Check maximum number of open positions
-- [ ] Check daily loss limit
-- [ ] Check drawdown limit
-- [ ] Check margin requirements
-- [ ] Check available free margin
-- [ ] Check spread/slippage conditions
-- [ ] Check whether trading is currently allowed
-- [ ] Check whether the requested stop-loss is valid
+- [ ] Check maximum risk per trade, e.g. 0.5% of equity
+- [ ] Check margin requirements with available free margin
 - [ ] Reject the trade if any limit is violated
