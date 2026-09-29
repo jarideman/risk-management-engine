@@ -2,8 +2,9 @@
 - [x] Setup connection
 
 ## Pre trade validation checks
-- [ ] Check whether trading is currently allowed
-- [ ] Check maximum number of open positions
+- [x] Check whether trading is currently allowed
+- [x] Check margin requirements with available free margin
+- [x] Check maximum number of open positions
 - [ ] Check drawdown limit
 - [ ] Check daily loss limit
 
@@ -14,5 +15,4 @@
 - [ ] Check maximum exposure per symbol
 - [ ] Check correlation/exposure across related symbols
 - [ ] Check maximum risk per trade, e.g. 0.5% of equity
-- [ ] Check margin requirements with available free margin
 - [ ] Reject the trade if any limit is violated

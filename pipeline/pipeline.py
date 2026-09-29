@@ -12,15 +12,14 @@ def run_pipeline():
     request = validate_order(order_type)
 
     if request:
-        place_order(request)
-        print("Order placed successfully")
+        _place_order(request)
     else:
-        print("Invalid order")
+        print("Order does not meet requirements")
 
     pass
 
 
-def place_order(order):
+def _place_order(order):
     result = mt5.order_send(order)
 
     if result.retcode != mt5.TRADE_RETCODE_DONE:
