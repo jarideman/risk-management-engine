@@ -3,7 +3,7 @@ from config import SLIPPAGE, SYMBOL
 
 
 def validate_order(order_type):
-    if (not pre_validation_checks()):
+    if (not _pre_validation_checks()):
         return None
 
     lot_size = 0.01
@@ -33,13 +33,24 @@ def validate_order(order_type):
     }
 
 
-def pre_validation_checks():
-    # Check whether trading is currently allowed
+def _pre_validation_checks():
+    account_info = mt5.account_info()
 
-    # Check maximum number of open positions
+    # print(account_info)
+
+    if (not account_info.trade_allowed):
+        return False
+
+    if (account_info.margin_free < 200):
+        return False
+    
+    open_positions = mt5.positions_total()
+
+    if (open_positions > 10):
+        return False
 
     # Check drawdown limit
 
     # Check daily loss limit
 
-    return True
+    return False
