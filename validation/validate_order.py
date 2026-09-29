@@ -28,6 +28,10 @@ def validate_order(order_type):
 
     if (lot_size < symbol_info.point):
         return None
+
+    # Check maximum total portfolio exposure
+    # Check maximum exposure per symbol
+    # Check correlation/exposure across related symbols
     
     return {
         "action": mt5.TRADE_ACTION_DEAL,

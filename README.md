@@ -14,5 +14,4 @@
 - [ ] Check maximum total portfolio exposure
 - [ ] Check maximum exposure per symbol
 - [ ] Check correlation/exposure across related symbols
-- [ ] Check maximum risk per trade, e.g. 0.5% of equity
-- [ ] Reject the trade if any limit is violated
+- [x] Reject the trade if any limit is violated
