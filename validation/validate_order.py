@@ -53,9 +53,9 @@ def _pre_validation_checks():
         return False
 
     floating_pnl = account_info.equity - account_info.balance
-    day_pnl = floating_pnl + daily_closed_pnl
+    daily_pnl  = floating_pnl + daily_closed_pnl
 
-    if (day_pnl < -250):
+    if (daily_pnl  < -350):
         return False
 
     return True
