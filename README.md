@@ -10,7 +10,7 @@
 
 ## Pre trade risk checks
 - [x] Calculate position size
-- [ ] Check whether the requested stop-loss and take-profit are valid
+- [x] Check whether the requested stop-loss and take-profit are valid
 - [ ] Check maximum total portfolio exposure
 - [ ] Check maximum exposure per symbol
 - [ ] Check correlation/exposure across related symbols
