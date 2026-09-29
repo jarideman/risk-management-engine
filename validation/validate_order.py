@@ -1,15 +1,16 @@
 import MetaTrader5 as mt5
 from config import SLIPPAGE, SYMBOL
 from datetime import datetime, timezone
+import math
+
 
 def validate_order(order_type):
-    if (not _pre_validation_checks()):
+    account_info = mt5.account_info()
+
+    if (not _pre_validation_checks(account_info)):
         return None
 
-    lot_size = 0.01
-
     tick = mt5.symbol_info_tick(SYMBOL)
-
     price = tick.ask if order_type == mt5.ORDER_TYPE_BUY else tick.bid
 
     if order_type == mt5.ORDER_TYPE_BUY:
@@ -18,6 +19,8 @@ def validate_order(order_type):
     else:
         sl = price + 100
         tp = price - 100
+
+    lot_size = _calculate_lot_size(price, sl, account_info)
 
     return {
         "action": mt5.TRADE_ACTION_DEAL,
@@ -32,10 +35,26 @@ def validate_order(order_type):
         "type_filling": mt5.ORDER_FILLING_IOC,
     }
 
+def _calculate_lot_size(price, stop_loss, account_info):
+    risk_money = account_info.equity * 0.001
+    loss_1_lot = abs(
+        mt5.order_calc_profit(
+            mt5.ORDER_TYPE_BUY,
+            SYMBOL,
+            1.0,
+            price,
+            stop_loss
+        )
+    )
 
-def _pre_validation_checks():
-    account_info = mt5.account_info()
+    lot_size = risk_money / loss_1_lot
 
+    symbol_info = mt5.symbol_info(SYMBOL)
+    step = symbol_info.volume_step
+
+    return math.floor(lot_size / step) * step
+
+def _pre_validation_checks(account_info):
     if (not account_info.trade_allowed):
         return False
 

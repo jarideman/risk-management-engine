@@ -9,7 +9,7 @@
 - [x] Check drawdown limit
 
 ## Pre trade risk checks
-- [ ] Calculate position size
+- [x] Calculate position size
 - [ ] Check whether the requested stop-loss and take-profit are valid
 - [ ] Check maximum total portfolio exposure
 - [ ] Check maximum exposure per symbol
