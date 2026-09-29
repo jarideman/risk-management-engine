@@ -7,31 +7,34 @@ import math
 def validate_order(order_type):
     account_info = mt5.account_info()
 
-    if (not _pre_validation_checks(account_info)):
+    if (not _pre_validation_checks(account_info=account_info)):
         return None
 
     symbol_info = mt5.symbol_info(SYMBOL)
-    price = symbol_info.ask if order_type == mt5.ORDER_TYPE_BUY else symbol_info.bid
+    entry = symbol_info.ask if order_type == mt5.ORDER_TYPE_BUY else symbol_info.bid
 
     if order_type == mt5.ORDER_TYPE_BUY:
-        sl = price - 100
-        tp = price + 100
+        sl = entry - 100
+        tp = entry + 100
     else:
-        sl = price + 100
-        tp = price - 100
+        sl = entry + 100
+        tp = entry - 100
 
     
-    if (not _validate_tp_and_sl(price, tp, sl, symbol_info)):
+    if (not _validate_tp_and_sl(entry=entry, take_profit=tp, stop_loss=sl, order_type=order_type, symbol_info=symbol_info)):
         return None
 
-    lot_size = _calculate_lot_size(price, sl, account_info, symbol_info)
+    lot_size = _calculate_lot_size(entry=entry, stop_loss=sl, account_info=account_info, symbol_info=symbol_info)
 
+    if (lot_size < symbol_info.point):
+        return None
+    
     return {
         "action": mt5.TRADE_ACTION_DEAL,
         "symbol": SYMBOL,
         "volume": lot_size,
         "type": order_type,
-        "price": price,
+        "price": entry,
         "sl": sl,
         "tp": tp,
         "deviation": SLIPPAGE,
@@ -40,19 +43,34 @@ def validate_order(order_type):
     }
 
 
-def _validate_tp_and_sl(price, take_profit, stop_loss, symbol_info):
+def _validate_tp_and_sl(entry, take_profit, stop_loss, order_type, symbol_info):
     minimum_distance = symbol_info.trade_stops_level * symbol_info.point
+
+    if order_type == mt5.ORDER_TYPE_BUY:
+        if entry - stop_loss < minimum_distance:
+            return False
+
+        if take_profit - entry < minimum_distance:
+            return False
+
+    elif order_type == mt5.ORDER_TYPE_SELL:
+        if stop_loss - entry < minimum_distance:
+            return False
+
+        if entry - take_profit < minimum_distance:
+            return False
+
     return True
 
 
-def _calculate_lot_size(price, stop_loss, account_info, symbol_info):
+def _calculate_lot_size(entry, stop_loss, account_info, symbol_info):
     risk_money = account_info.equity * 0.001
     loss_1_lot = abs(
         mt5.order_calc_profit(
             mt5.ORDER_TYPE_BUY,
             SYMBOL,
             1.0,
-            price,
+            entry,
             stop_loss
         )
     )
@@ -77,13 +95,13 @@ def _pre_validation_checks(account_info):
 
     daily_closed_pnl = _daily_closed_pnl()
 
-    if (daily_closed_pnl < -300):
+    if (daily_closed_pnl < -3000):
         return False
 
     floating_pnl = account_info.equity - account_info.balance
     daily_pnl  = floating_pnl + daily_closed_pnl
 
-    if (daily_pnl  < -350):
+    if (daily_pnl  < -3500):
         return False
 
     return True
