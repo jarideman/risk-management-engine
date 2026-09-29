@@ -10,8 +10,8 @@ def validate_order(order_type):
     if (not _pre_validation_checks(account_info)):
         return None
 
-    tick = mt5.symbol_info_tick(SYMBOL)
-    price = tick.ask if order_type == mt5.ORDER_TYPE_BUY else tick.bid
+    symbol_info = mt5.symbol_info(SYMBOL)
+    price = symbol_info.ask if order_type == mt5.ORDER_TYPE_BUY else symbol_info.bid
 
     if order_type == mt5.ORDER_TYPE_BUY:
         sl = price - 100
@@ -20,7 +20,11 @@ def validate_order(order_type):
         sl = price + 100
         tp = price - 100
 
-    lot_size = _calculate_lot_size(price, sl, account_info)
+    
+    if (not _validate_tp_and_sl(price, tp, sl, symbol_info)):
+        return None
+
+    lot_size = _calculate_lot_size(price, sl, account_info, symbol_info)
 
     return {
         "action": mt5.TRADE_ACTION_DEAL,
@@ -35,7 +39,13 @@ def validate_order(order_type):
         "type_filling": mt5.ORDER_FILLING_IOC,
     }
 
-def _calculate_lot_size(price, stop_loss, account_info):
+
+def _validate_tp_and_sl(price, take_profit, stop_loss, symbol_info):
+    minimum_distance = symbol_info.trade_stops_level * symbol_info.point
+    return True
+
+
+def _calculate_lot_size(price, stop_loss, account_info, symbol_info):
     risk_money = account_info.equity * 0.001
     loss_1_lot = abs(
         mt5.order_calc_profit(
@@ -49,7 +59,6 @@ def _calculate_lot_size(price, stop_loss, account_info):
 
     lot_size = risk_money / loss_1_lot
 
-    symbol_info = mt5.symbol_info(SYMBOL)
     step = symbol_info.volume_step
 
     return math.floor(lot_size / step) * step
