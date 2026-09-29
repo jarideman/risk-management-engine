@@ -6,7 +6,7 @@
 - [x] Check margin requirements with available free margin
 - [x] Check maximum number of open positions
 - [x] Check daily loss limit
-- [ ] Check drawdown limit
+- [x] Check drawdown limit
 
 ## Pre trade risk checks
 - [ ] Calculate position size

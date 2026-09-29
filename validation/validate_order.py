@@ -35,7 +35,7 @@ def validate_order(order_type):
 
 def _pre_validation_checks():
     account_info = mt5.account_info()
-    print(account_info)
+
     if (not account_info.trade_allowed):
         return False
 
