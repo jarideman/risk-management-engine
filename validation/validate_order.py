@@ -1,12 +1,20 @@
 import MetaTrader5 as mt5
-from config import SLIPPAGE
+from config import SLIPPAGE, EXPOSURE_GROUPS, MAX_GROUP_EXPOSURE
 from datetime import datetime, timezone
 import math
 
 
 def validate_order(order_type, symbol, lot_size):
     if not symbol:
+        print('Symbol not defined')
+
         return None
+
+    if (not _get_exposure_group(symbol)):
+        print('Symbol not in exposure groups')
+        
+        return None
+
 
     global SYMBOL
     SYMBOL = symbol
@@ -49,7 +57,11 @@ def validate_order(order_type, symbol, lot_size):
         return None
 
 
-    # Check correlation/exposure across related symbols
+    valid_exposure = _check_positions_exposure()
+
+    if (not valid_exposure):
+        return None
+
     
     # Check sl risk of positions
 
@@ -65,6 +77,33 @@ def validate_order(order_type, symbol, lot_size):
         "magic": 123456,
         "type_filling": mt5.ORDER_FILLING_IOC,
     }
+
+
+def _get_exposure_group(symbol):
+    for group, symbols in EXPOSURE_GROUPS.items():
+        if symbol in symbols:
+            return group
+
+    return None
+
+
+def _check_positions_exposure():
+    positions = mt5.positions_get()
+
+    for position in positions:
+        print(position)
+
+    result = {}
+
+    for group, symbols in EXPOSURE_GROUPS.items():
+        result[group] = sum(
+            p.volume # change to exposure
+            for p in positions
+            if p.symbol in symbols
+        )
+
+    print(result)
+    return False
 
 
 def _validate_tp_and_sl(entry, take_profit, stop_loss, order_type, symbol_info):

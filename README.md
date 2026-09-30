@@ -1,5 +1,7 @@
 ## Setup
 - [x] Setup connection
+- [ ] Show validations what order exceeds
+
 
 ## Pre trade validation checks
 - [x] Check whether trading is currently allowed
