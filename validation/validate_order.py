@@ -5,11 +5,6 @@ import math
 
 
 def validate_order(order_type, symbol, lot_size):
-    if not symbol:
-        print('Symbol not defined')
-
-        return None
-
     if (not _get_exposure_group(symbol)):
         print('Symbol not in exposure groups')
         
@@ -29,12 +24,16 @@ def validate_order(order_type, symbol, lot_size):
     symbol_info = mt5.symbol_info(SYMBOL)
 
     if (lot_size < symbol_info.point):
+        print('Lot size is to small')
+
         return None
 
 
     symbol_positions = mt5.positions_get(SYMBOL)
 
     if (symbol_positions and len(symbol_positions) >= 3):
+        print(f"Too many positions open for symbol: {SYMBOL}")
+
         return None
 
 
@@ -54,6 +53,8 @@ def validate_order(order_type, symbol, lot_size):
     max_lot_size = _calculate_max_lot_size(entry=entry, stop_loss=sl, account_info=account_info, symbol_info=symbol_info)
 
     if (lot_size > max_lot_size):
+        print('Lot size exceeds maximum lot size')
+
         return None
 
 
@@ -146,28 +147,38 @@ def _calculate_max_lot_size(entry, stop_loss, account_info, symbol_info):
 
 def _pre_validation_checks(account_info):
     if (not account_info.trade_allowed):
+        print('Trading not allowed')
+
         return False
 
 
     if (account_info.margin_free < 200):
+        print('Not enough margin free')
+
         return False
 
 
     margin_exposure = account_info.margin / account_info.equity
 
     if (margin_exposure > 0.5):
+        print('To much margin exposure')
+
         return None
 
     
     open_positions = mt5.positions_total()
 
     if (open_positions > 10):
+        print('To much open positions')
+
         return False
 
 
     daily_closed_pnl = _daily_closed_pnl()
 
-    if (daily_closed_pnl < -3000):
+    if (daily_closed_pnl < -300):
+        print('To much daily loss closed')
+
         return False
 
 
@@ -175,6 +186,8 @@ def _pre_validation_checks(account_info):
     daily_pnl  = floating_pnl + daily_closed_pnl
 
     if (daily_pnl  < -3500):
+        print('To much daily floatin and pnl loss')
+
         return False
 
     return True

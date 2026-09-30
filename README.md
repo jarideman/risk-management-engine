@@ -1,7 +1,7 @@
 ## Setup
 - [x] Setup connection
-- [ ] Show validations what order exceeds
-
+- [ ] Validations whats wrong when order exceeds rules
+- [ ] All input values manageable in config
 
 ## Pre trade validation checks
 - [x] Check whether trading is currently allowed

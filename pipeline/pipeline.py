@@ -14,7 +14,9 @@ def run_pipeline():
 
     if not mt5.symbol_select(symbol, True):
         print('Symbol not found')
+
         deinit_mt5()
+        
         return False
 
 
