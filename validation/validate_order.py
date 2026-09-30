@@ -4,14 +4,12 @@ from datetime import datetime, timezone
 import math
 
 
-def validate_order(order_type, symbol):
+def validate_order(order_type, symbol, lot_size):
     if not symbol:
         return None
 
     global SYMBOL
     SYMBOL = symbol
-
-    lot_size = 0.1
 
 
     account_info = mt5.account_info()

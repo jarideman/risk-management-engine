@@ -16,5 +16,4 @@
 - [X] Check maximum exposure per symbol
 - [ ] Check correlation/exposure across related symbols
 - [ ] Check sl risk of positions
-
 - [ ] Reject the trade if any limit is violated

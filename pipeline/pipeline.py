@@ -6,7 +6,7 @@ from connection.mt5_connection import deinit_mt5
 
 def run_pipeline():
     symbol = "BTCUSD"
-
+    lot_size = 0.01
     order_type = random.choice([
         mt5.ORDER_TYPE_BUY,
         mt5.ORDER_TYPE_SELL,
@@ -16,8 +16,9 @@ def run_pipeline():
         print('Symbol not found')
         deinit_mt5()
         return False
-        
-    request = validate_order(order_type, symbol)
+
+
+    request = validate_order(order_type, symbol, lot_size)
 
     if request:
         _place_order(request)
