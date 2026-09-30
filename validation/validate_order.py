@@ -1,16 +1,31 @@
 import MetaTrader5 as mt5
-from config import SLIPPAGE, SYMBOL
+from config import SLIPPAGE
 from datetime import datetime, timezone
 import math
 
 
-def validate_order(order_type):
+def validate_order(order_type, symbol):
+    if not symbol:
+        return None
+
+    global SYMBOL
+    SYMBOL = symbol
+
+    lot_size = 0.1
+
+
     account_info = mt5.account_info()
 
     if (not _pre_validation_checks(account_info=account_info)):
         return None
 
+
     symbol_info = mt5.symbol_info(SYMBOL)
+
+    if (lot_size < symbol_info.point):
+        return None
+
+    
     entry = symbol_info.ask if order_type == mt5.ORDER_TYPE_BUY else symbol_info.bid
 
     if order_type == mt5.ORDER_TYPE_BUY:
@@ -19,18 +34,24 @@ def validate_order(order_type):
     else:
         sl = entry + 100
         tp = entry - 100
-
     
     if (not _validate_tp_and_sl(entry=entry, take_profit=tp, stop_loss=sl, order_type=order_type, symbol_info=symbol_info)):
         return None
 
-    lot_size = _calculate_lot_size(entry=entry, stop_loss=sl, account_info=account_info, symbol_info=symbol_info)
 
-    if (lot_size < symbol_info.point):
+    max_lot_size = _calculate_max_lot_size(entry=entry, stop_loss=sl, account_info=account_info, symbol_info=symbol_info)
+
+    if (lot_size > max_lot_size):
+        return None
+
+
+    symbol_positions = mt5.positions_get(SYMBOL)
+
+    if (symbol_positions >= 3):
         return None
 
     # Check maximum total portfolio exposure
-    # Check maximum exposure per symbol
+
     # Check correlation/exposure across related symbols
     
     return {
@@ -67,7 +88,7 @@ def _validate_tp_and_sl(entry, take_profit, stop_loss, order_type, symbol_info):
     return True
 
 
-def _calculate_lot_size(entry, stop_loss, account_info, symbol_info):
+def _calculate_max_lot_size(entry, stop_loss, account_info, symbol_info):
     risk_money = account_info.equity * 0.001
     loss_1_lot = abs(
         mt5.order_calc_profit(
@@ -80,7 +101,6 @@ def _calculate_lot_size(entry, stop_loss, account_info, symbol_info):
     )
 
     lot_size = risk_money / loss_1_lot
-
     step = symbol_info.volume_step
 
     return math.floor(lot_size / step) * step
@@ -89,18 +109,22 @@ def _pre_validation_checks(account_info):
     if (not account_info.trade_allowed):
         return False
 
+
     if (account_info.margin_free < 200):
         return False
+
     
     open_positions = mt5.positions_total()
 
     if (open_positions > 10):
         return False
 
+
     daily_closed_pnl = _daily_closed_pnl()
 
     if (daily_closed_pnl < -3000):
         return False
+
 
     floating_pnl = account_info.equity - account_info.balance
     daily_pnl  = floating_pnl + daily_closed_pnl

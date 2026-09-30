@@ -1,15 +1,23 @@
 import MetaTrader5 as mt5
 import random
 from validation.validate_order import validate_order
+from connection.mt5_connection import deinit_mt5
 
 
 def run_pipeline():
+    symbol = "BTCUSD"
+
     order_type = random.choice([
         mt5.ORDER_TYPE_BUY,
         mt5.ORDER_TYPE_SELL,
     ])
+
+    if not mt5.symbol_select(symbol, True):
+        print('Symbol not found')
+        deinit_mt5()
+        return False
         
-    request = validate_order(order_type)
+    request = validate_order(order_type, symbol)
 
     if request:
         _place_order(request)
