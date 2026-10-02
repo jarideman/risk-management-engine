@@ -29,14 +29,6 @@ def validate_order(order_type, symbol, lot_size):
         return None
 
 
-    symbol_positions = mt5.positions_get(SYMBOL)
-
-    if (symbol_positions and len(symbol_positions) >= 3):
-        print(f"Too many positions open for symbol: {SYMBOL}")
-
-        return None
-
-
     entry = symbol_info.ask if order_type == mt5.ORDER_TYPE_BUY else symbol_info.bid
 
     if order_type == mt5.ORDER_TYPE_BUY:
@@ -56,6 +48,10 @@ def validate_order(order_type, symbol, lot_size):
         print('Lot size exceeds maximum lot size')
 
         return None
+
+    # Check maximum exposure per symbol -> with incoming order, check if exposure exceeds max exposure for symbol
+    # Check correlation/exposure across related symbols -> with incoming order, check if exposure exceeds max exposure for group of symbols
+    # Check sl risk of positions
 
 
     valid_exposure = _check_positions_exposure()
@@ -112,16 +108,24 @@ def _validate_tp_and_sl(entry, take_profit, stop_loss, order_type, symbol_info):
 
     if order_type == mt5.ORDER_TYPE_BUY:
         if entry - stop_loss < minimum_distance:
+            print('Stop loss too close to entry')
+        
             return False
 
         if take_profit - entry < minimum_distance:
+            print('Take profit too close to entry')
+
             return False
 
     elif order_type == mt5.ORDER_TYPE_SELL:
         if stop_loss - entry < minimum_distance:
+            print('Stop loss too close to entry')
+
             return False
 
         if entry - take_profit < minimum_distance:
+            print('Take profit too close to entry')
+
             return False
 
     return True
