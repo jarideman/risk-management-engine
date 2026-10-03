@@ -41,3 +41,9 @@ MAX_GROUP_EXPOSURE = {
     "indices": 1.00,
     "forex": 2.00,
 }
+MAX_SYMBOL_EXPOSURE = {
+    "crypto": 0.50,
+    "us_stocks": 0.90,
+    "indices": 0.50,
+    "forex": 0.90,
+}
