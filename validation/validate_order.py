@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 import math
 
 
-def validate_order(order):
+def validate_order(order: dict):
     if (order.get("order_type") is None or
         not order.get("symbol") or
         not order.get("lot_size") or
@@ -102,7 +102,7 @@ def validate_order(order):
     }
 
 
-def _get_exposure_group(symbol):
+def _get_exposure_group(symbol: str):
     for group, symbols in EXPOSURE_GROUPS.items():
         if symbol in symbols:
             return group
@@ -110,7 +110,7 @@ def _get_exposure_group(symbol):
     return None
 
 
-def _check_symbol_exposure(exposure_group, lot_size, order_type):
+def _check_symbol_exposure(exposure_group: str, lot_size: float, order_type: int):
     max_symbol_exposure = MAX_SYMBOL_EXPOSURE[exposure_group]
 
     symbol_positions = mt5.positions_get(symbol=SYMBOL)
@@ -137,7 +137,7 @@ def _check_symbol_exposure(exposure_group, lot_size, order_type):
     return abs(exposure) < max_symbol_exposure
 
 
-def _check_positions_group_exposure(exposure_group, lot_size, order_type):
+def _check_positions_group_exposure(exposure_group: str, lot_size: float, order_type: int):
     positions = mt5.positions_get()
 
     if (not positions):
@@ -170,7 +170,7 @@ def _check_positions_group_exposure(exposure_group, lot_size, order_type):
 
     return abs(exposure[exposure_group]) < MAX_GROUP_EXPOSURE[exposure_group]
 
-def _check_sl_risk(lot_size, entry, stop_loss, order_type, account_info):
+def _check_sl_risk(lot_size: float, entry: float, stop_loss: float, order_type: int, account_info: dict):
     max_loss = mt5.order_calc_profit(
         order_type,
         SYMBOL,
@@ -203,7 +203,7 @@ def _check_sl_risk(lot_size, entry, stop_loss, order_type, account_info):
     return max_loss_total < sl_risk_money
 
 
-def _validate_tp_and_sl(entry, take_profit, stop_loss, order_type, symbol_info):
+def _validate_tp_and_sl(entry: float, take_profit: float, stop_loss: float, order_type: int, symbol_info: object):
     minimum_distance = symbol_info.trade_stops_level * symbol_info.point
 
     if order_type == mt5.ORDER_TYPE_BUY:
@@ -231,7 +231,7 @@ def _validate_tp_and_sl(entry, take_profit, stop_loss, order_type, symbol_info):
     return True
 
 
-def _calculate_max_lot_size(entry, stop_loss, order_type, account_info, symbol_info):
+def _calculate_max_lot_size(entry: float, stop_loss: float, order_type: int, account_info: dict, symbol_info: object):
     risk_money = account_info.balance * RISK_PERCENTAGE
     loss_1_lot = abs(
         mt5.order_calc_profit(
@@ -249,7 +249,7 @@ def _calculate_max_lot_size(entry, stop_loss, order_type, account_info, symbol_i
     return math.floor(lot_size / step) * step
 
 
-def _pre_validation_checks(account_info):
+def _pre_validation_checks(account_info: dict):
     if (not account_info.trade_allowed):
         print('Trading not allowed')
 

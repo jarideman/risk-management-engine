@@ -49,7 +49,7 @@ def run_pipeline():
     pass
 
 
-def _place_order(order):
+def _place_order(order: dict):
     result = mt5.order_send(order)
 
     if result.retcode != mt5.TRADE_RETCODE_DONE:
