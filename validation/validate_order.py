@@ -9,7 +9,8 @@ from config import (
     SLIPPAGE,
     EXPOSURE_GROUPS,
     MAX_SYMBOL_EXPOSURE,
-    MAX_GROUP_EXPOSURE
+    MAX_GROUP_EXPOSURE,
+    SL_RISK_PERCENTAGE
 )
 from datetime import datetime, timezone
 import math
@@ -56,14 +57,14 @@ def validate_order(order):
         return None
 
 
-    max_lot_size = _calculate_max_lot_size(entry=order["entry"], stop_loss=order["sl"], account_info=account_info, symbol_info=symbol_info)
+    max_lot_size = _calculate_max_lot_size(entry=order["entry"], stop_loss=order["sl"], order_type=order["order_type"], account_info=account_info, symbol_info=symbol_info)
 
     if (order["lot_size"] > max_lot_size):
         print('Lot size exceeds maximum lot size')
 
         return None
 
-    # Check maximum exposure per symbol -> with incoming order, check if exposure exceeds max exposure for symbol
+
     valid_symbol_exposure = _check_symbol_exposure(exposure_group=exposure_group, lot_size=order["lot_size"], order_type=order["order_type"])
 
     if (not valid_symbol_exposure):
@@ -79,8 +80,8 @@ def validate_order(order):
 
         return None
 
-    # Check sl risk of positions -> with incoming order, check if sl risk of positions exceeds max risk percentage
-    valid_sl_risk = _check_sl_risk(order["lot_size"], order["sl"])
+
+    valid_sl_risk = _check_sl_risk(lot_size=order["lot_size"], entry=order["entry"], stop_loss=order["sl"], order_type=order["order_type"], account_info=account_info)
 
     if (not valid_sl_risk):
         print("Placing order would exceed maximum SL risk")
@@ -169,10 +170,37 @@ def _check_positions_group_exposure(exposure_group, lot_size, order_type):
 
     return abs(exposure[exposure_group]) < MAX_GROUP_EXPOSURE[exposure_group]
 
-def _check_sl_risk(lot_size, stop_loss):
-    # TODO: Implement logic to check if placing the order would exceed maximum SL risk
+def _check_sl_risk(lot_size, entry, stop_loss, order_type, account_info):
+    max_loss = mt5.order_calc_profit(
+        order_type,
+        SYMBOL,
+        lot_size,
+        entry,
+        stop_loss
+    )
 
-    return False
+    positions = mt5.positions_get()
+    positions_max_loss = 0
+
+    for position in positions:
+        if position.sl == 0:
+            continue
+
+        loss = mt5.order_calc_profit(
+            position.type,
+            position.symbol,
+            position.volume,
+            position.price_open,
+            position.sl
+        )
+
+        positions_max_loss += abs(loss)
+
+
+    max_loss_total = positions_max_loss + abs(max_loss)
+    sl_risk_money = account_info.balance * SL_RISK_PERCENTAGE
+
+    return max_loss_total < sl_risk_money
 
 
 def _validate_tp_and_sl(entry, take_profit, stop_loss, order_type, symbol_info):
@@ -203,11 +231,11 @@ def _validate_tp_and_sl(entry, take_profit, stop_loss, order_type, symbol_info):
     return True
 
 
-def _calculate_max_lot_size(entry, stop_loss, account_info, symbol_info):
-    risk_money = account_info.equity * RISK_PERCENTAGE
+def _calculate_max_lot_size(entry, stop_loss, order_type, account_info, symbol_info):
+    risk_money = account_info.balance * RISK_PERCENTAGE
     loss_1_lot = abs(
         mt5.order_calc_profit(
-            mt5.ORDER_TYPE_BUY,
+            order_type,
             SYMBOL,
             1.0,
             entry,

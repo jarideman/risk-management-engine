@@ -17,5 +17,5 @@
 - [x] Check whether the requested stop-loss and take-profit are valid
 - [x] Check maximum exposure per symbol
 - [x] Check correlation/exposure across related symbols
-- [ ] Check sl risk of positions
-- [ ] Reject the trade if any limit is violated
+- [x] Check sl risk of positions
+- [x] Reject the trade if any limit is violated
