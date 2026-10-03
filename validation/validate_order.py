@@ -1,11 +1,22 @@
 import MetaTrader5 as mt5
-from config import MAX_DAILY_LOSS, MAX_POSITIONS, MAX_DAILY_PNL, MARGIN_EXPOSURE_THRESHOLD, RISK_PERCENTAGE, FREE_MARGIN_THRESHOLD, SLIPPAGE, EXPOSURE_GROUPS, MAX_GROUP_EXPOSURE
+from config import (
+    MAX_DAILY_LOSS,
+    MAX_POSITIONS,
+    MAX_DAILY_PNL,
+    MARGIN_EXPOSURE_THRESHOLD,
+    RISK_PERCENTAGE,
+    FREE_MARGIN_THRESHOLD,
+    SLIPPAGE,
+    EXPOSURE_GROUPS,
+    MAX_SYMBOL_EXPOSURE,
+    MAX_GROUP_EXPOSURE
+)
 from datetime import datetime, timezone
 import math
 
 
 def validate_order(order):
-    if (not order.get("order_type") or
+    if (order.get("order_type") is None or
         not order.get("symbol") or
         not order.get("lot_size") or
         not order.get("entry") or
@@ -53,15 +64,15 @@ def validate_order(order):
         return None
 
     # Check maximum exposure per symbol -> with incoming order, check if exposure exceeds max exposure for symbol
-    valid_symbol_exposure = _check_positions_exposure()
+    valid_symbol_exposure = _check_symbol_exposure(exposure_group=exposure_group, lot_size=order["lot_size"], order_type=order["order_type"])
 
     if (not valid_symbol_exposure):
         print(f'Placing order would exceed maximum exposure for: {SYMBOL}')
 
         return None
 
-    # Check correlation/exposure across related symbols -> with incoming order, check if exposure exceeds max exposure for group of symbols
-    valid_exposure = _check_positions_group_exposure()
+
+    valid_exposure = _check_positions_group_exposure(exposure_group=exposure_group, lot_size=order["lot_size"], order_type=order["order_type"])
 
     if (not valid_exposure):
         print(f'Placing order would exceed maximum exposure for: {exposure_group}')
@@ -98,16 +109,65 @@ def _get_exposure_group(symbol):
     return None
 
 
-def _check_positions_exposure():
-    # TODO: Implement logic to check if placing the order would exceed maximum exposure for the symbol
+def _check_symbol_exposure(exposure_group, lot_size, order_type):
+    max_symbol_exposure = MAX_SYMBOL_EXPOSURE[exposure_group]
 
-    return False
+    symbol_positions = mt5.positions_get(symbol=SYMBOL)
+
+    if (not symbol_positions):
+        return True
 
 
-def _check_positions_group_exposure():
-    # TODO: Implement logic to check if placing the order would exceed maximum exposure for the group of symbols
+    exposure = 0
 
-    return False
+    if order_type == mt5.POSITION_TYPE_BUY:
+        exposure = lot_size
+    elif order_type == mt5.POSITION_TYPE_SELL:
+        exposure = -lot_size
+
+
+    for position in symbol_positions:
+        if position.type == mt5.POSITION_TYPE_BUY:
+            exposure += position.volume
+        elif position.type == mt5.POSITION_TYPE_SELL:
+            exposure -= position.volume
+
+
+    return abs(exposure) < max_symbol_exposure
+
+
+def _check_positions_group_exposure(exposure_group, lot_size, order_type):
+    positions = mt5.positions_get()
+
+    if (not positions):
+        return True
+
+
+    exposure = {}
+
+    if order_type == mt5.POSITION_TYPE_BUY:
+        exposure = {
+            exposure_group: lot_size
+        }   
+    elif order_type == mt5.POSITION_TYPE_SELL:
+        exposure = {
+            exposure_group: -lot_size
+        }
+
+
+    for position in positions:
+        group = _get_exposure_group(position.symbol)
+
+        if group not in exposure:
+            exposure[group] = 0
+
+        if position.type == mt5.POSITION_TYPE_BUY:
+            exposure[group] += position.volume
+        elif position.type == mt5.POSITION_TYPE_SELL:
+            exposure[group] -= position.volume
+
+
+    return abs(exposure[exposure_group]) < MAX_GROUP_EXPOSURE[exposure_group]
 
 def _check_sl_risk(lot_size, stop_loss):
     # TODO: Implement logic to check if placing the order would exceed maximum SL risk
