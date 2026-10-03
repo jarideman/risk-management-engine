@@ -4,17 +4,27 @@ from datetime import datetime, timezone
 import math
 
 
-def validate_order(order_type, symbol, lot_size, entry, sl, tp):
-    exposure_group = _get_exposure_group(symbol)
+def validate_order(order):
+    if (not order.get("order_type") or
+        not order.get("symbol") or
+        not order.get("lot_size") or
+        not order.get("entry") or
+        not order.get("sl") or
+        not order.get("tp")):
+        print('Missing required parameters')
+
+        return None
+
+    exposure_group = _get_exposure_group(order["symbol"])
 
     if (not exposure_group):
-        print(f'Symbol: {symbol} not in exposure groups')
+        print(f'Symbol: {order["symbol"]} not in exposure groups')
 
         return None
 
 
     global SYMBOL
-    SYMBOL = symbol
+    SYMBOL = order["symbol"]
 
 
     account_info = mt5.account_info()
@@ -25,33 +35,33 @@ def validate_order(order_type, symbol, lot_size, entry, sl, tp):
 
     symbol_info = mt5.symbol_info(SYMBOL)
 
-    if (lot_size < symbol_info.point):
+    if (order["lot_size"] < symbol_info.point):
         print('Lot size is to small')
 
         return None
 
 
-    if (not _validate_tp_and_sl(entry=entry, take_profit=tp, stop_loss=sl, order_type=order_type, symbol_info=symbol_info)):
+    if (not _validate_tp_and_sl(entry=order["entry"], take_profit=order["tp"], stop_loss=order["sl"], order_type=order["order_type"], symbol_info=symbol_info)):
         return None
 
 
-    max_lot_size = _calculate_max_lot_size(entry=entry, stop_loss=sl, account_info=account_info, symbol_info=symbol_info)
+    max_lot_size = _calculate_max_lot_size(entry=order["entry"], stop_loss=order["sl"], account_info=account_info, symbol_info=symbol_info)
 
-    if (lot_size > max_lot_size):
+    if (order["lot_size"] > max_lot_size):
         print('Lot size exceeds maximum lot size')
 
         return None
 
     # Check maximum exposure per symbol -> with incoming order, check if exposure exceeds max exposure for symbol
-    valid_symbol_exposure = _check_positions_exposure(symbol)
+    valid_symbol_exposure = _check_positions_exposure()
 
     if (not valid_symbol_exposure):
-        print(f'Placing order would exceed maximum exposure for: {symbol}')
+        print(f'Placing order would exceed maximum exposure for: {SYMBOL}')
 
         return None
 
     # Check correlation/exposure across related symbols -> with incoming order, check if exposure exceeds max exposure for group of symbols
-    valid_exposure = _check_positions_exposure()
+    valid_exposure = _check_positions_group_exposure()
 
     if (not valid_exposure):
         print(f'Placing order would exceed maximum exposure for: {exposure_group}')
@@ -59,7 +69,7 @@ def validate_order(order_type, symbol, lot_size, entry, sl, tp):
         return None
 
     # Check sl risk of positions -> with incoming order, check if sl risk of positions exceeds max risk percentage
-    valid_sl_risk = _check_sl_risk(symbol, lot_size, sl)
+    valid_sl_risk = _check_sl_risk(order["lot_size"], order["sl"])
 
     if (not valid_sl_risk):
         print("Placing order would exceed maximum SL risk")
@@ -69,11 +79,11 @@ def validate_order(order_type, symbol, lot_size, entry, sl, tp):
     return {
         "action": mt5.TRADE_ACTION_DEAL,
         "symbol": SYMBOL,
-        "volume": lot_size,
-        "type": order_type,
-        "price": entry,
-        "sl": sl,
-        "tp": tp,
+        "volume": order["lot_size"],
+        "type": order["order_type"],
+        "price": order["entry"],
+        "sl": order["sl"],
+        "tp": order["tp"],
         "deviation": SLIPPAGE,
         "magic": 123456,
         "type_filling": mt5.ORDER_FILLING_IOC,
@@ -89,21 +99,19 @@ def _get_exposure_group(symbol):
 
 
 def _check_positions_exposure():
-    positions = mt5.positions_get()
+    # TODO: Implement logic to check if placing the order would exceed maximum exposure for the symbol
 
-    for position in positions:
-        print(position)
+    return False
 
-    result = {}
 
-    for group, symbols in EXPOSURE_GROUPS.items():
-        result[group] = sum(
-            p.volume # change to exposure
-            for p in positions
-            if p.symbol in symbols
-        )
+def _check_positions_group_exposure():
+    # TODO: Implement logic to check if placing the order would exceed maximum exposure for the group of symbols
 
-    print(result)
+    return False
+
+def _check_sl_risk(lot_size, stop_loss):
+    # TODO: Implement logic to check if placing the order would exceed maximum SL risk
+
     return False
 
 

@@ -30,7 +30,16 @@ def run_pipeline():
         sl = entry + 100
         tp = entry - 100
 
-    request = validate_order(order_type, symbol, lot_size, entry, sl, tp)
+    order = {
+        "order_type": order_type,
+        "symbol": symbol,
+        "lot_size": lot_size,
+        "entry": entry,
+        "sl": sl,
+        "tp": tp,
+    }
+
+    request = validate_order(order=order)
 
     if request:
         _place_order(request)
