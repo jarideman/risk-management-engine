@@ -1,5 +1,5 @@
 import MetaTrader5 as mt5
-from config import SLIPPAGE, EXPOSURE_GROUPS, MAX_GROUP_EXPOSURE
+from config import MAX_DAILY_LOSS, MAX_POSITIONS, MAX_DAILY_PNL, MARGIN_EXPOSURE_THRESHOLD, RISK_PERCENTAGE, FREE_MARGIN_THRESHOLD, SLIPPAGE, EXPOSURE_GROUPS, MAX_GROUP_EXPOSURE
 from datetime import datetime, timezone
 import math
 
@@ -51,8 +51,6 @@ def validate_order(order_type, symbol, lot_size):
 
     # Check maximum exposure per symbol -> with incoming order, check if exposure exceeds max exposure for symbol
     # Check correlation/exposure across related symbols -> with incoming order, check if exposure exceeds max exposure for group of symbols
-    # Check sl risk of positions
-
 
     valid_exposure = _check_positions_exposure()
 
@@ -60,7 +58,7 @@ def validate_order(order_type, symbol, lot_size):
         return None
 
     
-    # Check sl risk of positions
+    # Check sl risk of positions -> with incoming order, check if sl risk of positions exceeds max risk percentage
 
     return {
         "action": mt5.TRADE_ACTION_DEAL,
@@ -132,7 +130,7 @@ def _validate_tp_and_sl(entry, take_profit, stop_loss, order_type, symbol_info):
 
 
 def _calculate_max_lot_size(entry, stop_loss, account_info, symbol_info):
-    risk_money = account_info.equity * 0.001
+    risk_money = account_info.equity * RISK_PERCENTAGE
     loss_1_lot = abs(
         mt5.order_calc_profit(
             mt5.ORDER_TYPE_BUY,
@@ -156,7 +154,7 @@ def _pre_validation_checks(account_info):
         return False
 
 
-    if (account_info.margin_free < 200):
+    if (account_info.margin_free < FREE_MARGIN_THRESHOLD):
         print('Not enough margin free')
 
         return False
@@ -164,7 +162,7 @@ def _pre_validation_checks(account_info):
 
     margin_exposure = account_info.margin / account_info.equity
 
-    if (margin_exposure > 0.5):
+    if (margin_exposure > MARGIN_EXPOSURE_THRESHOLD):
         print('To much margin exposure')
 
         return None
@@ -172,7 +170,7 @@ def _pre_validation_checks(account_info):
     
     open_positions = mt5.positions_total()
 
-    if (open_positions > 10):
+    if (open_positions > MAX_POSITIONS):
         print('To much open positions')
 
         return False
@@ -180,7 +178,7 @@ def _pre_validation_checks(account_info):
 
     daily_closed_pnl = _daily_closed_pnl()
 
-    if (daily_closed_pnl < -300):
+    if (daily_closed_pnl < MAX_DAILY_LOSS):
         print('To much daily loss closed')
 
         return False
@@ -189,7 +187,7 @@ def _pre_validation_checks(account_info):
     floating_pnl = account_info.equity - account_info.balance
     daily_pnl  = floating_pnl + daily_closed_pnl
 
-    if (daily_pnl  < -3500):
+    if (daily_pnl  < MAX_DAILY_PNL):
         print('To much daily floatin and pnl loss')
 
         return False
