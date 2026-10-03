@@ -4,10 +4,12 @@ from datetime import datetime, timezone
 import math
 
 
-def validate_order(order_type, symbol, lot_size):
-    if (not _get_exposure_group(symbol)):
-        print('Symbol not in exposure groups')
-        
+def validate_order(order_type, symbol, lot_size, entry, sl, tp):
+    exposure_group = _get_exposure_group(symbol)
+
+    if (not exposure_group):
+        print(f'Symbol: {symbol} not in exposure groups')
+
         return None
 
 
@@ -29,15 +31,6 @@ def validate_order(order_type, symbol, lot_size):
         return None
 
 
-    entry = symbol_info.ask if order_type == mt5.ORDER_TYPE_BUY else symbol_info.bid
-
-    if order_type == mt5.ORDER_TYPE_BUY:
-        sl = entry - 100
-        tp = entry + 100
-    else:
-        sl = entry + 100
-        tp = entry - 100
-    
     if (not _validate_tp_and_sl(entry=entry, take_profit=tp, stop_loss=sl, order_type=order_type, symbol_info=symbol_info)):
         return None
 
@@ -50,15 +43,28 @@ def validate_order(order_type, symbol, lot_size):
         return None
 
     # Check maximum exposure per symbol -> with incoming order, check if exposure exceeds max exposure for symbol
-    # Check correlation/exposure across related symbols -> with incoming order, check if exposure exceeds max exposure for group of symbols
+    valid_symbol_exposure = _check_positions_exposure(symbol)
 
+    if (not valid_symbol_exposure):
+        print(f'Placing order would exceed maximum exposure for: {symbol}')
+
+        return None
+
+    # Check correlation/exposure across related symbols -> with incoming order, check if exposure exceeds max exposure for group of symbols
     valid_exposure = _check_positions_exposure()
 
     if (not valid_exposure):
+        print(f'Placing order would exceed maximum exposure for: {exposure_group}')
+
         return None
 
-    
     # Check sl risk of positions -> with incoming order, check if sl risk of positions exceeds max risk percentage
+    valid_sl_risk = _check_sl_risk(symbol, lot_size, sl)
+
+    if (not valid_sl_risk):
+        print("Placing order would exceed maximum SL risk")
+
+        return None
 
     return {
         "action": mt5.TRADE_ACTION_DEAL,
