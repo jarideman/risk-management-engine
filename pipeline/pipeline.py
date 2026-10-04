@@ -1,7 +1,7 @@
 import MetaTrader5 as mt5
 import random
 from validation.validate_order import validate_order
-from connection.mt5_connection import deinit_mt5
+from connection import deinit_mt5
 
 
 def run_pipeline():

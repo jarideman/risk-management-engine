@@ -1,4 +1,4 @@
-from connection.mt5_connection import init_mt5, deinit_mt5
+from connection import init_mt5, deinit_mt5
 from pipeline.pipeline import run_pipeline
 
 
