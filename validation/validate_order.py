@@ -16,6 +16,19 @@ from datetime import datetime, timezone
 import math
 
 
+def _valid_number(num):
+    if num is None:
+        return False
+
+    if not isinstance(num, (int, float)):
+        return False
+
+    if not math.isfinite(num):
+        return False
+
+    return True
+
+
 def validate_order(order: dict):
     if (order.get("order_type") is None or
         not order.get("symbol") or
@@ -239,6 +252,9 @@ def _calculate_max_lot_size(entry: float, stop_loss: float, order_type: int, acc
             stop_loss
         )
     )
+
+    if (not _valid_number(risk_money) or not _valid_number(loss_1_lot)):
+        return 0
 
     lot_size = risk_money / loss_1_lot
     step = symbol_info.volume_step
