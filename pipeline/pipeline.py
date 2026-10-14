@@ -55,8 +55,8 @@ def _place_order(order: dict):
     if result.retcode != mt5.TRADE_RETCODE_DONE:
         print(f"order_send failed, retcode={result.retcode}")
 
-        mt5.shutdown()
-        quit()
+        deinit_mt5()
+        return
  
     print("Order send successful", result)
-    pass
+    return

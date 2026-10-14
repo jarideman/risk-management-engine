@@ -35,17 +35,14 @@ def validate_order(order: dict):
         return None
 
 
-    global SYMBOL
-    SYMBOL = order["symbol"]
-
-
+    symbol = order["symbol"]
     account_info = mt5.account_info()
 
-    if (not _pre_validation_checks(account_info=account_info)):
+    if (not _pre_validation_checks(account_info=account_info, symbol=symbol)):
         return None
 
 
-    symbol_info = mt5.symbol_info(SYMBOL)
+    symbol_info = mt5.symbol_info(symbol)
 
     if (order["lot_size"] < symbol_info.point):
         print('Lot size is to small')
@@ -57,7 +54,7 @@ def validate_order(order: dict):
         return None
 
 
-    max_lot_size = _calculate_max_lot_size(entry=order["entry"], stop_loss=order["sl"], order_type=order["order_type"], account_info=account_info, symbol_info=symbol_info)
+    max_lot_size = _calculate_max_lot_size(entry=order["entry"], stop_loss=order["sl"], order_type=order["order_type"], account_info=account_info, symbol_info=symbol_info, symbol=symbol)
 
     if (order["lot_size"] > max_lot_size):
         print('Lot size exceeds maximum lot size')
@@ -65,10 +62,10 @@ def validate_order(order: dict):
         return None
 
 
-    valid_symbol_exposure = _check_symbol_exposure(exposure_group=exposure_group, lot_size=order["lot_size"], order_type=order["order_type"])
+    valid_symbol_exposure = _check_symbol_exposure(exposure_group=exposure_group, lot_size=order["lot_size"], order_type=order["order_type"], symbol=symbol)
 
     if (not valid_symbol_exposure):
-        print(f'Placing order would exceed maximum exposure for: {SYMBOL}')
+        print(f'Placing order would exceed maximum exposure for: {symbol}')
 
         return None
 
@@ -81,7 +78,7 @@ def validate_order(order: dict):
         return None
 
 
-    valid_sl_risk = _check_sl_risk(lot_size=order["lot_size"], entry=order["entry"], stop_loss=order["sl"], order_type=order["order_type"], account_info=account_info)
+    valid_sl_risk = _check_sl_risk(lot_size=order["lot_size"], entry=order["entry"], stop_loss=order["sl"], order_type=order["order_type"], account_info=account_info, symbol=symbol)
 
     if (not valid_sl_risk):
         print("Placing order would exceed maximum SL risk")
@@ -90,7 +87,7 @@ def validate_order(order: dict):
 
     return {
         "action": mt5.TRADE_ACTION_DEAL,
-        "symbol": SYMBOL,
+        "symbol": symbol,
         "volume": order["lot_size"],
         "type": order["order_type"],
         "price": order["entry"],
@@ -110,10 +107,10 @@ def _get_exposure_group(symbol: str):
     return None
 
 
-def _check_symbol_exposure(exposure_group: str, lot_size: float, order_type: int):
+def _check_symbol_exposure(exposure_group: str, lot_size: float, order_type: int, symbol: str):
     max_symbol_exposure = MAX_SYMBOL_EXPOSURE[exposure_group]
 
-    symbol_positions = mt5.positions_get(symbol=SYMBOL)
+    symbol_positions = mt5.positions_get(symbol=symbol)
 
     if (not symbol_positions):
         return True
@@ -170,10 +167,10 @@ def _check_positions_group_exposure(exposure_group: str, lot_size: float, order_
 
     return abs(exposure[exposure_group]) < MAX_GROUP_EXPOSURE[exposure_group]
 
-def _check_sl_risk(lot_size: float, entry: float, stop_loss: float, order_type: int, account_info: dict):
+def _check_sl_risk(lot_size: float, entry: float, stop_loss: float, order_type: int, account_info: dict, symbol: str):
     max_loss = mt5.order_calc_profit(
         order_type,
-        SYMBOL,
+        symbol,
         lot_size,
         entry,
         stop_loss
@@ -231,12 +228,12 @@ def _validate_tp_and_sl(entry: float, take_profit: float, stop_loss: float, orde
     return True
 
 
-def _calculate_max_lot_size(entry: float, stop_loss: float, order_type: int, account_info: dict, symbol_info: object):
+def _calculate_max_lot_size(entry: float, stop_loss: float, order_type: int, account_info: dict, symbol_info: object, symbol: str):
     risk_money = account_info.balance * RISK_PERCENTAGE
     loss_1_lot = abs(
         mt5.order_calc_profit(
             order_type,
-            SYMBOL,
+            symbol,
             1.0,
             entry,
             stop_loss
@@ -249,7 +246,7 @@ def _calculate_max_lot_size(entry: float, stop_loss: float, order_type: int, acc
     return math.floor(lot_size / step) * step
 
 
-def _pre_validation_checks(account_info: dict):
+def _pre_validation_checks(account_info: dict, symbol: str):
     if (not account_info.trade_allowed):
         print('Trading not allowed')
 
@@ -272,13 +269,13 @@ def _pre_validation_checks(account_info: dict):
     
     open_positions = mt5.positions_total()
 
-    if (open_positions > MAX_POSITIONS):
+    if (open_positions >= MAX_POSITIONS):
         print('To much open positions')
 
         return False
 
 
-    daily_closed_pnl = _daily_closed_pnl()
+    daily_closed_pnl = _daily_closed_pnl(symbol=symbol)
 
     if (daily_closed_pnl < MAX_DAILY_LOSS):
         print('To much daily loss closed')
@@ -297,8 +294,8 @@ def _pre_validation_checks(account_info: dict):
     return True
 
 
-def _daily_closed_pnl():
-    tick = mt5.symbol_info_tick(SYMBOL)
+def _daily_closed_pnl(symbol: str):
+    tick = mt5.symbol_info_tick(symbol)
     
     server_time = datetime.fromtimestamp(tick.time, tz=timezone.utc)
     start_of_day = server_time.replace(hour=0, minute=0, second=0, microsecond=0)
