@@ -32,11 +32,11 @@ def _valid_number(num):
 def validate_order(order: dict):
     if (order.get("order_type") is None or
         not order.get("symbol") or
-        not order.get("lot_size") or
-        not order.get("entry") or
-        not order.get("sl") or
-        not order.get("tp")):
-        print('Missing required parameters')
+        not _valid_number(order.get("lot_size")) or
+        not _valid_number(order.get("entry")) or
+        not _valid_number(order.get("sl")) or
+        not _valid_number(order.get("tp"))):
+        print('Missing/invalid required parameters')
 
         return None
 
@@ -51,12 +51,20 @@ def validate_order(order: dict):
     symbol = order["symbol"]
     account_info = mt5.account_info()
 
+    if account_info is None:
+        return None
+
+
     if (not _pre_validation_checks(account_info=account_info, symbol=symbol)):
         return None
 
 
     symbol_info = mt5.symbol_info(symbol)
 
+    if symbol_info is None:
+        return None
+
+    
     if (order["lot_size"] < symbol_info.point):
         print('Lot size is to small')
 
@@ -293,7 +301,7 @@ def _pre_validation_checks(account_info: dict, symbol: str):
 
     daily_closed_pnl = _daily_closed_pnl(symbol=symbol)
 
-    if (daily_closed_pnl < MAX_DAILY_LOSS):
+    if (daily_closed_pnl <= MAX_DAILY_LOSS):
         print('To much daily loss closed')
 
         return False
@@ -312,6 +320,11 @@ def _pre_validation_checks(account_info: dict, symbol: str):
 
 def _daily_closed_pnl(symbol: str):
     tick = mt5.symbol_info_tick(symbol)
+
+    if tick is None:
+        print(f'Tick of symbol: {symbol} not found.')
+        return float('-inf')
+
     
     server_time = datetime.fromtimestamp(tick.time, tz=timezone.utc)
     start_of_day = server_time.replace(hour=0, minute=0, second=0, microsecond=0)
