@@ -1,10 +1,20 @@
 import MetaTrader5 as mt5
 import random
 from validation.validate_order import validate_order
+from validation.validate_config import validate_config
 from connection import deinit_mt5
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 def run_pipeline():
+    if not validate_config():
+        logger.critical("Not all config values are set.")
+
+        return False
+
     symbol = "BTCUSD"
     lot_size = 0.01
     order_type = random.choice([
@@ -13,11 +23,10 @@ def run_pipeline():
     ])
 
     if not mt5.symbol_select(symbol, True):
-        print(f'Symbol: {symbol} not found')
-
-        deinit_mt5()
+        logger.error("Symbol: %s not found", symbol)
         
-        return False
+        pass
+
 
     symbol_info = mt5.symbol_info(symbol)
 
@@ -44,7 +53,7 @@ def run_pipeline():
     if request:
         _place_order(request)
     else:
-        print("Order does not meet requirements")
+        logger.info("Order does not meet requirements")
 
     pass
 
@@ -53,10 +62,9 @@ def _place_order(order: dict):
     result = mt5.order_send(order)
 
     if result.retcode != mt5.TRADE_RETCODE_DONE:
-        print(f"order_send failed, retcode={result.retcode}")
+        logger.error("Order send failed, retcode=%s", result.retcode)
 
-        deinit_mt5()
         return
  
-    print("Order send successful", result)
+    logger.info("Order send successful", result)
     return
