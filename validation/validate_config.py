@@ -10,33 +10,44 @@ def validate_config():
     valid_config = True
 
     positive_values = [
-        'slippage',
-        'risk_percentage',
-        'sl_risk_percentage',
-        'free_margin_threshold'
-        'margin_exposure_threshold'
-        'max_positions'
+        'SLIPPAGE',
+        'RISK_PERCENTAGE',
+        'SL_RISK_PERCENTAGE',
+        'FREE_MARGIN_THRESHOLD',
+        'MAX_POSITIONS',
+        'MARGIN_EXPOSURE_THRESHOLD',
     ]
 
     negative_values = [
-        'max_daily_loss',
-        'max_daily_pnl',
+        'MAX_DAILY_LOSS',
+        'MAX_DAILY_PNL',
     ]
 
     non_empty_values = [
-        'exposure_groups',
-        'max_group_exposure',
-        'max_symbol_exposure',
+        'EXPOSURE_GROUPS',
+        'MAX_GROUP_EXPOSURE',
+        'MAX_SYMBOL_EXPOSURE',
     ]
 
     for positive_value in positive_values:
-        config_value = config[positive_value]
+        config_value = getattr(config, positive_value, None)
+
+        if not config_value:
+            logger.warning(
+                "Config value %s is empty",
+                positive_value,
+            )
+            valid_config = False
+
+            continue
+
 
         if not validate_number(config_value):
             logger.warning("Value: %s is not a valid number", positive_value)
             valid_config = False
 
-            pass
+            continue
+
 
         if config_value <= 0:
             logger.warning("Value: %s is not a positive number", positive_value)
@@ -44,18 +55,40 @@ def validate_config():
 
 
     for negative_value in negative_values:
-        config_value = config[negative_value]
+        config_value = getattr(config, negative_value, None)
+
+        if not config_value:
+            logger.warning(
+                "Config value %s is empty",
+                negative_value,
+            )
+            valid_config = False
+
+            continue
+
 
         if not validate_number(config_value):
             logger.warning("Value: %s is not a valid number", negative_value)
             valid_config = False
 
-            pass
+            continue
+
 
         if config_value >= 0:
             logger.warning("Value: %s is not a negative number", negative_value)
             valid_config = False
 
-    # TODO validate not emty
+
+    for non_empty_value in non_empty_values:
+        config_value = getattr(config, non_empty_value, None)
+
+        if not config_value:
+            logger.warning(
+                "Config value %s is empty",
+                non_empty_value,
+            )
+            valid_config = False
+
+            continue
 
     return valid_config
