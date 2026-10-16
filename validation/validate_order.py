@@ -130,13 +130,8 @@ def _get_exposure_group(symbol: str):
 
 def _check_symbol_exposure(exposure_group: str, lot_size: float, order_type: int, symbol: str):
     max_symbol_exposure = MAX_SYMBOL_EXPOSURE[exposure_group]
-
     symbol_positions = mt5.positions_get(symbol=symbol)
-
-    if (not symbol_positions):
-        return True
-
-
+    
     exposure = 0
 
     if order_type == mt5.POSITION_TYPE_BUY:
@@ -157,10 +152,6 @@ def _check_symbol_exposure(exposure_group: str, lot_size: float, order_type: int
 
 def _check_positions_group_exposure(exposure_group: str, lot_size: float, order_type: int):
     positions = mt5.positions_get()
-
-    if (not positions):
-        return True
-
 
     exposure = {}
 
@@ -196,6 +187,9 @@ def _check_sl_risk(lot_size: float, entry: float, stop_loss: float, order_type: 
         entry,
         stop_loss
     )
+
+    if not _valid_number(max_loss):
+        return False
 
     positions = mt5.positions_get()
     positions_max_loss = 0
