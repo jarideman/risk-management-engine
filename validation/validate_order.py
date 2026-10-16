@@ -14,36 +14,27 @@ from config import (
 )
 from datetime import datetime, timezone
 import math
+import logging
+from validation.validate_number import validate_number
 
-
-def _valid_number(num):
-    if num is None:
-        return False
-
-    if not isinstance(num, (int, float)):
-        return False
-
-    if not math.isfinite(num):
-        return False
-
-    return True
+logger = logging.getLogger(__name__)
 
 
 def validate_order(order: dict):
     if (order.get("order_type") is None or
         not order.get("symbol") or
-        not _valid_number(order.get("lot_size")) or
-        not _valid_number(order.get("entry")) or
-        not _valid_number(order.get("sl")) or
-        not _valid_number(order.get("tp"))):
-        print('Missing/invalid required parameters')
+        not validate_number(order.get("lot_size")) or
+        not validate_number(order.get("entry")) or
+        not validate_number(order.get("sl")) or
+        not validate_number(order.get("tp"))):
+        logger.warning('Missing/invalid required parameters')
 
         return None
 
     exposure_group = _get_exposure_group(order["symbol"])
 
     if (not exposure_group):
-        print(f'Symbol: {order["symbol"]} not in exposure groups')
+        logger.warning("Symbol: %s not in exposure groups", order["symbol"])
 
         return None
 
@@ -52,6 +43,8 @@ def validate_order(order: dict):
     account_info = mt5.account_info()
 
     if account_info is None:
+        logger.error("Account info not found")
+
         return None
 
 
@@ -62,11 +55,13 @@ def validate_order(order: dict):
     symbol_info = mt5.symbol_info(symbol)
 
     if symbol_info is None:
+        logger.error("Symbol info of: %s not found", symbol)
+    
         return None
 
     
     if (order["lot_size"] < symbol_info.point):
-        print('Lot size is to small')
+        logger.warning("Lot size is to small")
 
         return None
 
@@ -78,7 +73,7 @@ def validate_order(order: dict):
     max_lot_size = _calculate_max_lot_size(entry=order["entry"], stop_loss=order["sl"], order_type=order["order_type"], account_info=account_info, symbol_info=symbol_info, symbol=symbol)
 
     if (order["lot_size"] > max_lot_size):
-        print('Lot size exceeds maximum lot size')
+        logger.warning("Lot size exceeds maximum lot size")
 
         return None
 
@@ -86,7 +81,7 @@ def validate_order(order: dict):
     valid_symbol_exposure = _check_symbol_exposure(exposure_group=exposure_group, lot_size=order["lot_size"], order_type=order["order_type"], symbol=symbol)
 
     if (not valid_symbol_exposure):
-        print(f'Placing order would exceed maximum exposure for: {symbol}')
+        logger.warning("Placing order would exceed maximum exposure for: %s", symbol)
 
         return None
 
@@ -94,7 +89,7 @@ def validate_order(order: dict):
     valid_exposure = _check_positions_group_exposure(exposure_group=exposure_group, lot_size=order["lot_size"], order_type=order["order_type"])
 
     if (not valid_exposure):
-        print(f'Placing order would exceed maximum exposure for: {exposure_group}')
+        logger.warning("Placing order would exceed maximum exposure for: %s", exposure_group)
 
         return None
 
@@ -102,7 +97,7 @@ def validate_order(order: dict):
     valid_sl_risk = _check_sl_risk(lot_size=order["lot_size"], entry=order["entry"], stop_loss=order["sl"], order_type=order["order_type"], account_info=account_info, symbol=symbol)
 
     if (not valid_sl_risk):
-        print("Placing order would exceed maximum SL risk")
+        logger.warning("Placing order would exceed maximum SL risk")
 
         return None
 
@@ -188,7 +183,7 @@ def _check_sl_risk(lot_size: float, entry: float, stop_loss: float, order_type: 
         stop_loss
     )
 
-    if not _valid_number(max_loss):
+    if not validate_number(max_loss):
         return False
 
     positions = mt5.positions_get()
@@ -220,23 +215,23 @@ def _validate_tp_and_sl(entry: float, take_profit: float, stop_loss: float, orde
 
     if order_type == mt5.ORDER_TYPE_BUY:
         if entry - stop_loss < minimum_distance:
-            print('Stop loss too close to entry')
+            logger.warning("Stop loss too close to entry")
         
             return False
 
         if take_profit - entry < minimum_distance:
-            print('Take profit too close to entry')
+            logger.warning("Take profit too close to entry")
 
             return False
 
     elif order_type == mt5.ORDER_TYPE_SELL:
         if stop_loss - entry < minimum_distance:
-            print('Stop loss too close to entry')
+            logger.warning("Stop loss too close to entry")
 
             return False
 
         if entry - take_profit < minimum_distance:
-            print('Take profit too close to entry')
+            logger.warning("Take profit too close to entry")
 
             return False
 
@@ -255,7 +250,7 @@ def _calculate_max_lot_size(entry: float, stop_loss: float, order_type: int, acc
         )
     )
 
-    if (not _valid_number(risk_money) or not _valid_number(loss_1_lot)):
+    if (not validate_number(risk_money) or not validate_number(loss_1_lot)):
         return 0
 
     lot_size = risk_money / loss_1_lot
@@ -266,13 +261,13 @@ def _calculate_max_lot_size(entry: float, stop_loss: float, order_type: int, acc
 
 def _pre_validation_checks(account_info: dict, symbol: str):
     if (not account_info.trade_allowed):
-        print('Trading not allowed')
+        logger.error("Trading not allowed")
 
         return False
 
 
     if (account_info.margin_free < FREE_MARGIN_THRESHOLD):
-        print('Not enough margin free')
+        logger.warning("Not enough margin free")
 
         return False
 
@@ -280,7 +275,7 @@ def _pre_validation_checks(account_info: dict, symbol: str):
     margin_exposure = account_info.margin / account_info.equity
 
     if (margin_exposure > MARGIN_EXPOSURE_THRESHOLD):
-        print('To much margin exposure')
+        logger.warning("To much margin exposure")
 
         return None
 
@@ -288,7 +283,7 @@ def _pre_validation_checks(account_info: dict, symbol: str):
     open_positions = mt5.positions_total()
 
     if (open_positions >= MAX_POSITIONS):
-        print('To much open positions')
+        logger.warning("To much open positions")
 
         return False
 
@@ -296,7 +291,7 @@ def _pre_validation_checks(account_info: dict, symbol: str):
     daily_closed_pnl = _daily_closed_pnl(symbol=symbol)
 
     if (daily_closed_pnl <= MAX_DAILY_LOSS):
-        print('To much daily loss closed')
+        logger.warning("To much daily loss closed")
 
         return False
 
@@ -305,7 +300,7 @@ def _pre_validation_checks(account_info: dict, symbol: str):
     daily_pnl  = floating_pnl + daily_closed_pnl
 
     if (daily_pnl  < MAX_DAILY_PNL):
-        print('To much daily floatin and pnl loss')
+        logger.warning("To much daily floating and pnl loss")
 
         return False
 
@@ -316,7 +311,8 @@ def _daily_closed_pnl(symbol: str):
     tick = mt5.symbol_info_tick(symbol)
 
     if tick is None:
-        print(f'Tick of symbol: {symbol} not found.')
+        logger.error("Tick of symbol: %s not found", symbol)
+
         return float('-inf')
 
     
