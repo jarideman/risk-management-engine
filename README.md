@@ -1,4 +1,11 @@
-## Setup
+# Setup
+
+Run `pip install -r requirements.txt`
+
+run `python main.py`
+
+
+## Core
 - [x] Setup connection
 - [x] Validations whats wrong when order exceeds rules
 - [x] All input values manageable in config

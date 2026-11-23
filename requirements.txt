@@ -1,2 +1,2 @@
 git+https://github.com/jarideman/mt5-connection.git
-MetaTrader5
+MetaTrader5>=5.0.45,<6
