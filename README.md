@@ -1,8 +1,43 @@
 # Setup
 
-Run `pip install -r requirements.txt`
+### 1. Create virtual environment
+```bash
+python -m venv venv
+```
 
-run `python main.py`
+### 2. Activate virtual environment
+**Windows:**
+```bash
+venv\Scripts\activate
+```
+
+**Linux / macOS:**
+```bash
+source venv/bin/activate
+```
+
+### 3. Install dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Configure environment variables
+**Windows:**
+```bash
+copy .env.example .env
+```
+
+**Linux / macOS:**
+```bash
+cp .env.example .env
+```
+
+Fill/update the variables in `.env`.
+
+### 5. Run the application
+```bash
+python main.py
+```
 
 
 ## Core
